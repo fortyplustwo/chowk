@@ -36,7 +36,7 @@ def sendsms():
             return "Wrong request data. Get off my server you idiot and RTFM!"
 
 @app.route("/receivesms/", methods = ['POST','GET'])
-def recievesms():
+def receivesms():
     app.logging.debug("Recieved data %s", request.form)
     return "Ok"
 
