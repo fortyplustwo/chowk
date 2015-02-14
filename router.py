@@ -9,6 +9,7 @@ def compose_request(msg = {}, server = DEFAULT_KANNEL_SERVER):
             'from'     : msg['from'],
             'to'       : msg['to'],
             'text'     : msg['text'],
+            'smsc'     : server['smsc'],
     }
 
     url = "http://%s:%s/%s" % (server['host'],server['port'],server['path']);
