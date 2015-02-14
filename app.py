@@ -37,3 +37,7 @@ def sendsms():
 
 if __name__ == "__main__":
        app.run(debug=True, host='0.0.0.0')
+       from logging import RotatingFileHandler,DEBUG
+       file_handler = RotatingFileHandler('./loggedfile.log')
+       file_handler.setLevel(DEBUG)
+       app.logger.addHandler(file_handler)
