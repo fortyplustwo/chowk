@@ -18,7 +18,7 @@ def compose_request(msg = {}, server = DEFAULT_KANNEL_SERVER):
     r = Request('GET', url, data = data).prepare()
     return r
 
-def send_to_kannel(msg = {}, preferred_kannel_server = None, app): 
+def send_to_kannel(app, msg = {}, preferred_kannel_server = None):
     '''sends a given messages to the _RIGHT_ kannel server'''
     server = None
     if preferred_kannel_server is not NONE:
@@ -32,7 +32,7 @@ def send_to_kannel(msg = {}, preferred_kannel_server = None, app):
             prefixes = s['series']
             for p in prefixes:
                 recipient = msg['from'].strip('+') 
-                if recipient.startswith(p) #this is our number series
+                if recipient.startswith(p): #this is our number series
                     server = s 
                     app.logger.notice("Selected server %s with prefix (%s) matching with recipient number %s", (server, prefixes,p))
                     break;
@@ -49,7 +49,7 @@ def send_to_kannel(msg = {}, preferred_kannel_server = None, app):
     session = Session()
 
     request = compose_request(msg, server)
-    app.logger.notice("Calling %s with data %s", (request.url, request.body)
+    app.logger.notice("Calling %s with data %s", (request.url, request.body))
     response = session.send(request)
 
     print response.status_code
