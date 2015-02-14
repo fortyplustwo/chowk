@@ -11,7 +11,7 @@ def compose_request(msg = {}, server = DEFAULT_KANNEL_SERVER):
             'text'     : msg['text'],
     }
 
-    url = "http://%s:%d/%s" % (server['host'],server['port'],server['path']);
+    url = "http://%s:%s/%s" % (server['host'],server['port'],server['path']);
     
     #return a prepared Request
     app.logger
