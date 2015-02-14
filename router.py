@@ -21,7 +21,7 @@ def compose_request(msg = {}, server = DEFAULT_KANNEL_SERVER):
 def send_to_kannel(app, msg = {}, preferred_kannel_server = None):
     '''sends a given messages to the _RIGHT_ kannel server'''
     server = None
-    if preferred_kannel_server is not NONE:
+    if preferred_kannel_server is not None:
         try:
             server = KANNEL_SERVERS[preferred_kannel_server.lower()] #locate using ip
         except KeyError as ke:
