@@ -35,6 +35,11 @@ def sendsms():
             raise e
             return "Wrong request data. Get off my server you idiot and RTFM!"
 
+@app.route("/receivesms/", methods = ['POST','GET'])
+def recievesms():
+    app.logging.debug("Recieved data %s", request.form)
+    return "Ok"
+
 if __name__ == "__main__":
        app.run(debug = True, host = '0.0.0.0')
        from logging import FileHandler,DEBUG
