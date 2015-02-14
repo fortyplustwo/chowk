@@ -30,13 +30,13 @@ def send_to_kannel(app, msg = {}, preferred_kannel_server = None):
     
         for s,s_info in KANNEL_SERVERS.items():
             prefixes = s_info['series']
-            app.logger.debug("Server %s supports all numbers with the prefixes %s", (s, prefixes))
+            app.logger.debug("Server %s supports all numbers with the prefixes %s", s, prefixes)
             for p in prefixes:
                 recipient = msg['from'].strip('+') 
-                app.logger.debug("Trying to match %s with prefix %s ", (recipient, p))
+                app.logger.debug("Trying to match %s with prefix %s ", recipient, p)
                 if recipient.startswith(p): #this is our number series
-                    server = s_info
-                    app.logger.debug("Selected server %s with prefix (%s) matching with recipient number %s", (server, prefixes,p))
+                    server = s_info 
+                    app.logger.debug("Selected server %s with prefix (%s) matching with recipient number %s", server, prefixes,recipient)
                     break;
 
             if server is not None: #we have found our server!
@@ -51,12 +51,12 @@ def send_to_kannel(app, msg = {}, preferred_kannel_server = None):
     session = Session()
 
     request = compose_request(msg, server)
-    app.logger.notice("Calling %s with data %s", (request.url, request.body))
+    app.logger.notice("Calling %s with data %s", request.url, request.body)
     response = session.send(request)
 
     print response.status_code
     print response.text
-    app.logger.info("Received response code %s with text %s", (response.status_code, response.text))
+    app.logger.info("Received response code %s with text %s", response.status_code, response.text)
 
     return True
     #call it.
