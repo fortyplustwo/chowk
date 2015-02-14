@@ -36,8 +36,8 @@ def sendsms():
             return "Wrong request data. Get off my server you idiot and RTFM!"
 
 if __name__ == "__main__":
-       app.run(debug=True, host='0.0.0.0')
-       from logging import RotatingFileHandler,DEBUG
-       file_handler = RotatingFileHandler('./loggedfile.log')
+       app.run(host='0.0.0.0')
+       from logging import FileHandler,DEBUG
+       file_handler = FileHandler('./loggedfile.log')
        file_handler.setLevel(DEBUG)
        app.logger.addHandler(file_handler)

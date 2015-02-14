@@ -30,11 +30,13 @@ def send_to_kannel(app, msg = {}, preferred_kannel_server = None):
     
         for s,s_info in KANNEL_SERVERS.items():
             prefixes = s_info['series']
+            app.logger.debug("Server %s supports all numbers with the prefixes %s", (s, prefixes))
             for p in prefixes:
                 recipient = msg['from'].strip('+') 
+                app.logger.debug("Trying to match %s with prefix %s ", (recipient, p))
                 if recipient.startswith(p): #this is our number series
                     server = s_info
-                    app.logger.notice("Selected server %s with prefix (%s) matching with recipient number %s", (server, prefixes,p))
+                    app.logger.debug("Selected server %s with prefix (%s) matching with recipient number %s", (server, prefixes,p))
                     break;
 
             if server is not None: #we have found our server!
