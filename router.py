@@ -28,12 +28,12 @@ def send_to_kannel(app, msg = {}, preferred_kannel_server = None):
             server = KANNEL_SERVERS['DEFAULT_KANNEL_SERVER']
     else: #no preferred server was given, select the proper one based on the recipient number
     
-        for s in KANNEL_SERVERS:
-            prefixes = s['series']
+        for s,s_info in KANNEL_SERVERS.items():
+            prefixes = s_info['series']
             for p in prefixes:
                 recipient = msg['from'].strip('+') 
                 if recipient.startswith(p): #this is our number series
-                    server = s 
+                    server = s_info
                     app.logger.notice("Selected server %s with prefix (%s) matching with recipient number %s", (server, prefixes,p))
                     break;
 
