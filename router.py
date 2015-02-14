@@ -14,7 +14,6 @@ def compose_request(msg = {}, server = DEFAULT_KANNEL_SERVER):
     url = "http://%s:%s/%s" % (server['host'],server['port'],server['path']);
     
     #return a prepared Request
-    app.logger
     r = Request('GET', url, data = data).prepare()
     return r
 
