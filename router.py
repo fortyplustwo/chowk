@@ -50,12 +50,12 @@ def send_to_kannel(app, msg = {}, preferred_kannel_server = None):
     session = Session()
 
     request = compose_request(msg, server)
-    app.logger.notice("Calling %s with data %s", request.url, request.body)
+    app.logger.debug("Calling %s with data %s", request.url, request.body)
     response = session.send(request)
 
     print response.status_code
     print response.text
-    app.logger.info("Received response code %s with text %s", response.status_code, response.text)
+    app.logger.debug("Received response code %s with text %s", response.status_code, response.text)
 
     return True
     #call it.
