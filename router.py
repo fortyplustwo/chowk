@@ -45,7 +45,7 @@ def send_to_kannel(app, msg = {}, preferred_kannel_server = None):
 
     if server is None:
         app.logger.error("Could not select any server for forwarding message! Check logs.")
-    return False
+        return False
 
     #compose the complete Request with URL and data for sending sms
     session = Session()
