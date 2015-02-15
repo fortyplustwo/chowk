@@ -53,9 +53,12 @@ def receivesms():
         msg['args'] = request.args
 
         send_to_rapidpro(app = app, msg = msg)
-        #we will NOT return anything because whatever is returned will be sent as SMS to the original sender by Kannel
+        #we will NOT return any text because whatever is returned will be sent as SMS to the original sender by Kannel
+        #we return in the format (response, status, headers) so that Kannel knows that everything is HTTP 200 :)
+        return ('',200,[])
+
     except Exception as e:
-        #TODO: Send an email when unrecoverable exceptions occur!
+        #TODO: Send an email when unrecoverable exceptions occur, instead of just logging to the file here!
         app.logger.debug("Exception %s occurred", e)
         raise e
 

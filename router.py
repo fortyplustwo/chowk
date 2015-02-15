@@ -29,7 +29,7 @@ def send_to_rapidpro(app, msg = {}):
                 'from'  : msg['from'],
                 'text'  : msg['text'],
         }
-        r = post('POST' url, data = data)
+        r = post(url=url, data = data)
         app.logger.debug("Sending request to RapidPro server at %s", r.url)
         app.logger.debug("Data inside request to RapidPro server is %s", r.request.body)
         app.logger.debug("The response we got from RapidPro is %s", r.text)
