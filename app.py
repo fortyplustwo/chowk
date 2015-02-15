@@ -1,5 +1,5 @@
 from flask import Flask, request, abort
-from router import send_to_kannel, report_sent_to_rapidpro, send_to_rapidpro
+from router import send_to_kannel, report_sent_to_rapidpro, send_to_rapidpro, report_delivered_to_rapidpro, report_failed_to_rapidpro
 app = Flask(__name__)
 
 @app.route("/")
@@ -63,6 +63,13 @@ def receivesms():
         #TODO: Send an email when unrecoverable exceptions occur, instead of just logging to the file here!
         app.logger.debug("Exception %s occurred", e)
         raise e
+
+@app.route("/deliveredsms/", methods = ['GET','POST'])
+def deliveredsms():
+    ''' Handles and processes any kind of delivery reports sent by Kannel servers '''
+
+    #This will in turn use the report_delivered_to_rapidpro AND report_failed_to_rapidpro methods from router module.
+    return "Not implemented!"
 
 if __name__ == "__main__":
        app.run(debug = True, host = '0.0.0.0')

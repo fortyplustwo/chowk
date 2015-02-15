@@ -84,7 +84,7 @@ def send_to_kannel(app, msg = {}, preferred_kannel_server = None):
     #call it.
 
 def report_sent_to_rapidpro(msg, app):
-    '''Report to RapidPro that a message was successfully sent'''
+    '''Report to RapidPro that a message was successfully sent to Kannel'''
     try:
         data = {
                 'id' : msg['id'],
@@ -100,3 +100,18 @@ def report_sent_to_rapidpro(msg, app):
         app.logger.debug("Exception %s occurred", e)
         raise e
         return False
+
+def report_delivered_to_rapidpro(msg, app):
+    '''Report to RapidPro that a message was succesfully delivered by Kannel to the intended recipient'''
+
+    #NOTE: This will require asking Kannel to report deliveries at a given route implemented by chowk
+    pass;
+
+def report_failed_to_rapidpro(msg, app):
+    '''Report to RapidPro that Kannel failed to deliver a message to intended recipient'''
+
+    #This method will be called in two cases
+    #1. When Kannel reports a deliver failure, by calling chowk's dlr-url route 
+    #2. When an unrecoverable exception occurs when we are trying to handover a msg to Kannel for delivery
+
+    pass;
