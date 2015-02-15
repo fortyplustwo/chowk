@@ -1,9 +1,10 @@
-from requests import Request, Session
-from settings import KANNEL_SERVERS, DEFAULT_KANNEL_SERVER
+from requests import Request, Session, post
+from settings import KANNEL_SERVERS, DEFAULT_KANNEL_SERVER,RAPIDPRO_URLS
 
-def compose_request(msg = {}, server = DEFAULT_KANNEL_SERVER):
+def compose_request_for_kannel(msg = {}, server = DEFAULT_KANNEL_SERVER):
     '''composes a proper Request using the given msg and kannel server details'''
-    data = {
+
+    params = {  #the data to be sent as query string with the URL
             'username' : server['username'],
             'password' : server['password'],
             'from'     : msg['from'],
@@ -15,8 +16,29 @@ def compose_request(msg = {}, server = DEFAULT_KANNEL_SERVER):
     url = "http://%s:%s/%s" % (server['host'],server['port'],server['path']);
     
     #return a prepared Request
-    r = Request('GET', url, params = data)
+    r = Request('GET', url, params = params)
     return r
+
+def send_to_rapidpro(app, msg = {}):
+    '''sends a given message to the RapidPro server'''
+
+    try:
+        url = RAPIDPRO_URLS['RECEIVED']
+
+        data = { #the data to be sent in the body of the request
+                'from'  : msg['from'],
+                'text'  : msg['text'],
+        }
+        r = post('POST' url, data = data)
+        app.logger.debug("Sending request to RapidPro server at %s", r.url)
+        app.logger.debug("Data inside request to RapidPro server is %s", r.request.body)
+        app.logger.debug("The response we got from RapidPro is %s", r.text)
+
+        r.raise_for_status() #Will raise an exception with the HTTP code ONLY IF the HTTP status was NOT 200
+        return True
+    except Exception as e:
+        app.logger.debug("Exception %s occurred", e)
+        raise e
 
 def send_to_kannel(app, msg = {}, preferred_kannel_server = None):
     '''sends a given messages to the _RIGHT_ kannel server'''
@@ -50,7 +72,7 @@ def send_to_kannel(app, msg = {}, preferred_kannel_server = None):
     #compose the complete Request with URL and data for sending sms
     session = Session()
 
-    request = session.prepare_request(compose_request(msg, server))
+    request = session.prepare_request(compose_request_for_kannel(msg, server))
     app.logger.debug("Calling %s with data %s", request.url, request.body)
     response = session.send(request)
 
