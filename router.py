@@ -83,5 +83,20 @@ def send_to_kannel(app, msg = {}, preferred_kannel_server = None):
     return True
     #call it.
 
-def report_sent_to_rapidpro(msgid, RAPIDPRO_SENT_URL):
+def report_sent_to_rapidpro(msg, app):
     '''Report to RapidPro that a message was successfully sent'''
+    try:
+        data = {
+                'id' : msg['id'],
+        }
+
+        url = RAPIDPRO_URLS['SENT']
+        #Send a POST request to RapidPro server informing that the message has been queued successfull for sending at Kannel
+        r = post(url = url, data = data)
+        app.logger.debug("Informed RapidPro at %s of successfull enqueuing of the msgid %s at Kannel server", r.url,r.request.body)
+        app.logger.debug("The RapidPro server replied %s", r.text)
+        return True
+    except Exception as e:
+        app.logger.debug("Exception %s occurred", e)
+        raise e
+        return False

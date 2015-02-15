@@ -27,9 +27,11 @@ def sendsms():
             return "Bad luck! Couldn't deliver your message. Try again later in 30 minutes."
             abort(500)
         else:
-            #report back to the kannel server about the success of delivery of this message
-
-            return "OK"
+            #report back to the RapidPro server about the success of delivery of this message
+            app.logger.debug("Message %s succesfully forwarded to Kannel server", msg)
+            report_sent_to_rapidpro(msg = msg, app = app)
+            #we return in the format (response, status, headers) so that RapidPro knows that everything is HTTP 200 :)
+            return ('',200,[])
     except KeyError as e:
         print e
         print e.msg
