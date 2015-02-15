@@ -15,7 +15,7 @@ def compose_request(msg = {}, server = DEFAULT_KANNEL_SERVER):
     url = "http://%s:%s/%s" % (server['host'],server['port'],server['path']);
     
     #return a prepared Request
-    r = Request('GET', url, data = data).prepare()
+    r = Request('GET', url, params = data)
     return r
 
 def send_to_kannel(app, msg = {}, preferred_kannel_server = None):
@@ -50,7 +50,7 @@ def send_to_kannel(app, msg = {}, preferred_kannel_server = None):
     #compose the complete Request with URL and data for sending sms
     session = Session()
 
-    request = compose_request(msg, server)
+    request = session.prepare_request(compose_request(msg, server))
     app.logger.debug("Calling %s with data %s", request.url, request.body)
     response = session.send(request)
 
