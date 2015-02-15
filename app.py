@@ -1,5 +1,5 @@
 from flask import Flask, request, abort
-from router import send_to_kannel
+from router import send_to_kannel, report_sent_to_rapidpro
 app = Flask(__name__)
 
 @app.route("/")
@@ -24,10 +24,13 @@ def sendsms():
 
             #construct and send it forward
             status = send_to_kannel(msg = msg, app = app)
+
             if status is False:
                 return "Bad luck! Couldn't deliver your message. Try again later in 30 minutes."
                 abort(500)
             else:
+                #report back to the kannel server about the success of delivery of this message
+
                 return "OK"
         except KeyError as e:
             print e

@@ -61,3 +61,5 @@ def send_to_kannel(app, msg = {}, preferred_kannel_server = None):
     return True
     #call it.
 
+def report_sent_to_rapidpro(msgid, RAPIDPRO_SENT_URL):
+    '''Report to RapidPro that a message was successfully sent'''
