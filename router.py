@@ -28,9 +28,10 @@ def send_to_rapidpro(app, msg = {}):
         app.logger.debug("The server %s use the keyword %s", msg['host'], keyword)
 
         if keyword is not None:
-            if msg['text'].startswith(keyword):
+            text = msg['text'].split()
+            if text[0].upper() == keyword.upper() #match using the same case
                 app.logger.debug("Removing keyword %s from the message %s", keyword, msg['text'])
-                msg['text'] = msg['text'].strip(keyword).strip() #remove the keyword from the mssage and any trailing space after it.
+                msg['text'] = " ".join(text[1:]) #remove the keyword from the message and reconstruct the SMS
 
         url = RAPIDPRO_URLS['RECEIVED']
 
