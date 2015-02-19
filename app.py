@@ -1,5 +1,6 @@
 from flask import Flask, request, abort
 from router import send_to_kannel, report_sent_to_rapidpro, send_to_rapidpro, report_delivered_to_rapidpro, report_failed_to_rapidpro
+from utils import get_kannel_server
 app = Flask(__name__)
 
 @app.route("/")
@@ -53,6 +54,15 @@ def receivesms():
         msg['from'] = request.args['from']
         msg['text'] = request.args['text']
         msg['args'] = request.args
+
+        #get the ip address of the kannel server so that we can identify it and using all the special info about i#t
+        #if request.remote_addr
+        msg['host']   = get_kannel_server(request)
+
+        app.logger.debug("Identified! This message came from %s Kannel server", msg['host'])
+
+        if msg['host'] is False: #if we can't get the IP of the origin of request, just abort the whole process
+            raise Exception("Cannot retrieve IP from the request to recognize the Kannel Server. Aborting processing!")
 
         send_to_rapidpro(app = app, msg = msg)
         #we will NOT return any text because whatever is returned will be sent as SMS to the original sender by Kannel
