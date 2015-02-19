@@ -23,6 +23,15 @@ def send_to_rapidpro(app, msg = {}):
     '''sends a given message to the RapidPro server'''
 
     try:
+        #if there is a keyword in the message, just remove it before forwarding to RapidPro
+        keyword = KANNEL_SERVERS[msg['host']]['keyword']
+        app.logger.debug("The server %s use the keyword %s", msg['host'], keyword)
+
+        if keyword is not None:
+            if msg['text'].startswith(keyword):
+                app.logger.debug("Removing keyword %s from the message %s", keyword, msg['text'])
+                msg['text'] = msg['text'].strip(keyword).strip() #remove the keyword from the mssage and any trailing space after it.
+
         url = RAPIDPRO_URLS['RECEIVED']
 
         data = { #the data to be sent in the body of the request
