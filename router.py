@@ -29,7 +29,7 @@ def send_to_rapidpro(app, msg = {}):
 
         if keyword is not None:
             text = msg['text'].split()
-            if text[0].upper() == keyword.upper() #match using the same case
+            if text[0].upper() == keyword.upper(): #match using the same case
                 app.logger.debug("Removing keyword %s from the message %s", keyword, msg['text'])
                 msg['text'] = " ".join(text[1:]) #remove the keyword from the message and reconstruct the SMS
 
