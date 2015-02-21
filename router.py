@@ -1,5 +1,5 @@
 from requests import Request, Session, post
-from settings import KANNEL_SERVERS, DEFAULT_KANNEL_SERVER,RAPIDPRO_URLS
+from settings import KANNEL_SERVERS, DEFAULT_KANNEL_SERVER, RAPIDPRO_URLS, ROOT_URL
 
 def compose_request_for_kannel(msg = {}, server = DEFAULT_KANNEL_SERVER):
     '''composes a proper Request using the given msg and kannel server details'''
@@ -12,6 +12,11 @@ def compose_request_for_kannel(msg = {}, server = DEFAULT_KANNEL_SERVER):
             'text'     : msg['text'],
             'smsc'     : server['smsc'],
     }
+
+    #also ask for delivery reports
+    if server['smsc'] is not None: #since SMSC IDs are *required* for getting delivery reports,
+        params['dlr-mask'] = 31 #31 means we get ALL Kind of delivery reports. ref: http://www.kannel.org/download/1.4.0/userguide-1.4.0/userguide.html#DELIVERY-REPORTS
+        params['dlr-url'] = ROOT_URL + "/deliveredsms/?msg=%s&from=%p&to=%P&dlr-report-code=%d&dlr-report-value=%A" #we will try to identify the message for which the delivery report is, by the message text and recipient and sender phone numbers.
 
     url = "http://%s:%s/%s" % (server['host'],server['port'],server['path']);
     
