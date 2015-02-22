@@ -78,6 +78,12 @@ def receivesms():
 def deliveredsms():
     ''' Handles and processes any kind of delivery reports sent by Kannel servers '''
 
+    app.logger.debug("Method used is %s", request.method)
+    app.logger.debug("Delivery report is for msg id %s", request.form['id'])
+    app.logger.debug("Delivery report is for msg id %s", request.args['id'])
+    import pdb
+    pdb.set_trace()
+
     #This will in turn use the report_delivered_to_rapidpro AND report_failed_to_rapidpro methods from router module.
     return "Not implemented!"
 
