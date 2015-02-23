@@ -81,11 +81,11 @@ def deliveredsms():
     #This will in turn use the report_delivered_to_rapidpro AND report_failed_to_rapidpro methods from router module.
 
     try:
-        app.logger.debug("Delivery report is for msg id %s", request.args['msgid'])
         msg = {}
         msg['id'] = request.args['msgid']
-        msg['dlr-report-code'] = request.args['dlr-report-code']
+        msg['dlr-report-code'] = int(request.args['dlr-report-code'])
         msg['dlr-report-value'] = request.args['dlr-report-value']
+        app.logger.debug("Delivery report is for msg id %s with code %s and text %s", msg['id'], msg['dlr-report-code'], msg['dlr-report-value'])
 
         #based on the dlr_code, determine which method to call for reporting back to RapidPro server
         #Uses a composite OF 

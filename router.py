@@ -110,13 +110,14 @@ def report_status_to_rapidpro(status, msg, app):
        There is currently no clear distincition required by the RapidPro for the 3rd type of status
        and hence, we don't make it.
     '''
+    app.logger.debug("Status is %s", status)
     #TODO
     #FAILURE should be reported when 
     #1. When Kannel reports a deliver failure, by calling chowk's dlr-url route 
     #2. When an unrecoverable exception occurs when we are trying to handover a msg to Kannel for delivery
     try:
-        if status is None or type(status) is not str or type(status) is not unicode: #THERE is NO status to report!
-            return False
+        if status is None: #THERE is NO status to report!
+            raise Exception("Status was not specified!")
         elif status.upper() == 'SENT':
             url = RAPIDPRO_URLS['SENT']
         elif status.upper() == 'DELIVERED':
