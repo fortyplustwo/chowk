@@ -1,5 +1,5 @@
 from flask import Flask, request, abort
-from router import send_to_kannel, report_sent_to_rapidpro, send_to_rapidpro, report_delivered_to_rapidpro, report_failed_to_rapidpro
+from router import send_to_kannel, report_status_to_rapidpro, send_to_rapidpro
 from utils import get_kannel_server
 app = Flask(__name__)
 
