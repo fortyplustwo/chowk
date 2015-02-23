@@ -22,9 +22,9 @@ def sendsms():
         msg['id'] = request.form['id']
 
         #construct and send it forward
-        status = send_to_kannel(msg = msg, app = app)
+        status, status_code, status_msg = send_to_kannel(msg = msg, app = app)
 
-        if status is False:
+        if status is False or status_code is not 200:
             return "Bad luck! Couldn't deliver your message. Try again later in 30 minutes."
             abort(500)
         else:

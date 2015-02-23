@@ -97,7 +97,7 @@ def send_to_kannel(app, msg = {}, preferred_kannel_server = None):
     print response.text
     app.logger.debug("Received response code %s with text %s", response.status_code, response.text)
 
-    return True
+    return (True, response.status_code, response.text)
     #call it.
 
 def report_status_to_rapidpro(status, msg, app):
