@@ -17,7 +17,7 @@ def compose_request_for_kannel(msg = {}, server = DEFAULT_KANNEL_SERVER):
     #ref: http://www.kannel.org/download/1.4.0/userguide-1.4.0/userguide.html#DELIVERY-REPORTS
     if server['smsc'] is not None: #since SMSC IDs are *required* for getting delivery reports,
         params['dlr-mask'] = 31 #31 means we get ALL Kind of delivery reports.
-        params['dlr-url'] = ROOT_URL + "/deliveredsms/msgid=%s&dlr-report-code=%%d&dlr-report-value=%%A" % msg['id'] 
+        params['dlr-url'] = ROOT_URL + "/deliveredsms/?msgid=%s&dlr-report-code=%%d&dlr-report-value=%%A" % msg['id']
 
 
     url = "http://%s:%s/%s" % (server['host'],server['port'],server['path']);
