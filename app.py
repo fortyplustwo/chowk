@@ -1,5 +1,5 @@
 from flask import Flask, request, abort
-from router import send_to_kannel, report_sent_to_rapidpro, send_to_rapidpro, report_delivered_to_rapidpro, report_failed_to_rapidpro
+from router import send_to_kannel, report_status_to_rapidpro, send_to_rapidpro
 from utils import get_kannel_server
 app = Flask(__name__)
 
@@ -22,15 +22,15 @@ def sendsms():
         msg['id'] = request.form['id']
 
         #construct and send it forward
-        status = send_to_kannel(msg = msg, app = app)
+        status, status_code, status_msg = send_to_kannel(msg = msg, app = app)
 
-        if status is False:
+        if status is False or status_code is not 200:
             return "Bad luck! Couldn't deliver your message. Try again later in 30 minutes."
             abort(500)
         else:
             #report back to the RapidPro server about the success of delivery of this message
             app.logger.debug("Message %s succesfully forwarded to Kannel server", msg)
-            report_sent_to_rapidpro(msg = msg, app = app)
+            report_status_to_rapidpro(status = 'SENT', msg = msg, app = app)
             #we return in the format (response, status, headers) so that RapidPro knows that everything is HTTP 200 :)
             return ('',200,[])
     except KeyError as e:
@@ -74,12 +74,46 @@ def receivesms():
         app.logger.debug("Exception %s occurred", e)
         raise e
 
-@app.route("/deliveredsms/", methods = ['GET','POST'])
+@app.route("/deliveredsms/", methods = ['GET'])
 def deliveredsms():
     ''' Handles and processes any kind of delivery reports sent by Kannel servers '''
 
     #This will in turn use the report_delivered_to_rapidpro AND report_failed_to_rapidpro methods from router module.
-    return "Not implemented!"
+
+    try:
+        app.logger.debug("Delivery report is for msg id %s", request.args['msgid'])
+        msg = {}
+        msg['id'] = request.args['msgid']
+        msg['dlr-report-code'] = request.args['dlr-report-code']
+        msg['dlr-report-value'] = request.args['dlr-report-value']
+
+        #based on the dlr_code, determine which method to call for reporting back to RapidPro server
+        #Uses a composite OF 
+        #1.http://kannel.org/download/1.4.4/userguide-1.4.4/userguide.html#delivery-reports
+        #2.http://kannel.org/download/1.4.4/userguide-1.4.4/userguide.html#AEN5058
+
+        if msg['dlr-report-code'] == 1: #delivery success in delivering to PHONE
+            report_status_to_rapidpro('DELIVERED', msg, app)
+        elif msg['dlr-report-code'] == 8: #delivery success in delivering to the SMSC
+            report_status_to_rapidpro('SENT', msg, app)
+        elif msg['dlr-report-code'] == 2: #delivery FAILURE in delivering to PHONE
+            report_status_to_rapidpro('FAILED', msg, app)
+        elif msg['dlr-report-code'] == 16: #delivery FAILURE in delivering to SMSC; most probably a rejection by SMSC
+            report_status_to_rapidpro('FAILED', msg, app)
+        elif msg['dlr-report-code'] == 4: #QUEUED on the bearerbox of Kannel for delivery in future
+            #TODO: Do something better than just ignoring this status!
+            pass;
+        elif msg['dlr-report-code'] == 32: #Intermediate notifications ??
+            #TODO: Find out what all possible dlr-report-values are sent at such time.
+            pass
+
+        return ('',200,[]) #return HTTP 200 without any text inside
+
+    except Exception as e:
+        #TODO Send an email report with all the request.args so on
+        app.logger.debug("Exception %s occurred", e)
+        raise e
+        abort(500)
 
 if __name__ == "__main__":
        app.run(debug = True, host = '0.0.0.0')

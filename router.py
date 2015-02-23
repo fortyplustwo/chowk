@@ -1,5 +1,5 @@
 from requests import Request, Session, post
-from settings import KANNEL_SERVERS, DEFAULT_KANNEL_SERVER,RAPIDPRO_URLS
+from settings import KANNEL_SERVERS, DEFAULT_KANNEL_SERVER, RAPIDPRO_URLS, ROOT_URL
 
 def compose_request_for_kannel(msg = {}, server = DEFAULT_KANNEL_SERVER):
     '''composes a proper Request using the given msg and kannel server details'''
@@ -12,6 +12,13 @@ def compose_request_for_kannel(msg = {}, server = DEFAULT_KANNEL_SERVER):
             'text'     : msg['text'],
             'smsc'     : server['smsc'],
     }
+
+    #also ask for delivery reports
+    #ref: http://www.kannel.org/download/1.4.0/userguide-1.4.0/userguide.html#DELIVERY-REPORTS
+    if server['smsc'] is not None: #since SMSC IDs are *required* for getting delivery reports,
+        params['dlr-mask'] = 31 #31 means we get ALL Kind of delivery reports.
+        params['dlr-url'] = ROOT_URL + "/deliveredsms/msgid=%s&dlr-report-code=%%d&dlr-report-value=%%A" % msg['id'] 
+
 
     url = "http://%s:%s/%s" % (server['host'],server['port'],server['path']);
     
@@ -90,20 +97,40 @@ def send_to_kannel(app, msg = {}, preferred_kannel_server = None):
     print response.text
     app.logger.debug("Received response code %s with text %s", response.status_code, response.text)
 
-    return True
+    return (True, response.status_code, response.text)
     #call it.
 
-def report_sent_to_rapidpro(msg, app):
-    '''Report to RapidPro that a message was successfully sent to Kannel'''
+def report_status_to_rapidpro(status, msg, app):
+    '''Reports a specific delivery STATUS info about the msg to RapidPro
+       This includes:
+       1. SENT (A SMS has been given to the SMSC for delivering to the PHONE)
+       2. DELIVERED (A SMS has been delivered to the PHONE)
+       3. FAILURE (A SMS failed delivery because of problems at the SMSC end OR at the PHONE)
+
+       There is currently no clear distincition required by the RapidPro for the 3rd type of status
+       and hence, we don't make it.
+    '''
+    #TODO
+    #FAILURE should be reported when 
+    #1. When Kannel reports a deliver failure, by calling chowk's dlr-url route 
+    #2. When an unrecoverable exception occurs when we are trying to handover a msg to Kannel for delivery
     try:
+        if status is None or type(status) is not str or type(status) is not unicode: #THERE is NO status to report!
+            return False
+        elif status.upper() == 'SENT':
+            url = RAPIDPRO_URLS['SENT']
+        elif status.upper() == 'DELIVERED':
+            url = RAPIDPRO_URLS['DELIVERED']
+        elif status.upper() == 'FAILED':
+            url = RAPIDPRO_URLS['FAILED']
+
         data = {
                 'id' : msg['id'],
         }
 
-        url = RAPIDPRO_URLS['SENT']
         #Send a POST request to RapidPro server informing that the message has been queued successfull for sending at Kannel
         r = post(url = url, data = data)
-        app.logger.debug("Informed RapidPro at %s of successfull enqueuing of the msgid %s at Kannel server", r.url,r.request.body)
+        app.logger.debug("Informed RapidPro at %s that delivery status of msgid %s at Kannel server is %s", r.url,r.request.body, status)
         app.logger.debug("The RapidPro server replied %s", r.text)
         return True
     except Exception as e:
@@ -111,17 +138,4 @@ def report_sent_to_rapidpro(msg, app):
         raise e
         return False
 
-def report_delivered_to_rapidpro(msg, app):
-    '''Report to RapidPro that a message was succesfully delivered by Kannel to the intended recipient'''
 
-    #NOTE: This will require asking Kannel to report deliveries at a given route implemented by chowk
-    pass;
-
-def report_failed_to_rapidpro(msg, app):
-    '''Report to RapidPro that Kannel failed to deliver a message to intended recipient'''
-
-    #This method will be called in two cases
-    #1. When Kannel reports a deliver failure, by calling chowk's dlr-url route 
-    #2. When an unrecoverable exception occurs when we are trying to handover a msg to Kannel for delivery
-
-    pass;
