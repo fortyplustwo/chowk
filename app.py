@@ -74,18 +74,46 @@ def receivesms():
         app.logger.debug("Exception %s occurred", e)
         raise e
 
-@app.route("/deliveredsms/", methods = ['GET','POST'])
+@app.route("/deliveredsms/", methods = ['GET'])
 def deliveredsms():
     ''' Handles and processes any kind of delivery reports sent by Kannel servers '''
 
-    app.logger.debug("Method used is %s", request.method)
-    app.logger.debug("Delivery report is for msg id %s", request.form['id'])
-    app.logger.debug("Delivery report is for msg id %s", request.args['id'])
-    import pdb
-    pdb.set_trace()
-
     #This will in turn use the report_delivered_to_rapidpro AND report_failed_to_rapidpro methods from router module.
-    return "Not implemented!"
+
+    try:
+        app.logger.debug("Delivery report is for msg id %s", request.args['msgid'])
+        msg = {}
+        msg['id'] = request.args['msgid']
+        msg['dlr-report-code'] = request.args['dlr-report-code']
+        msg['dlr-report-value'] = request.args['dlr-report-value']
+
+        #based on the dlr_code, determine which method to call for reporting back to RapidPro server
+        #Uses a composite OF 
+        #1.http://kannel.org/download/1.4.4/userguide-1.4.4/userguide.html#delivery-reports
+        #2.http://kannel.org/download/1.4.4/userguide-1.4.4/userguide.html#AEN5058
+
+        if msg['dlr-report-code'] == 1: #delivery success in delivering to PHONE
+            report_status_to_rapidpro('DELIVERED', msg, app)
+        elif msg['dlr-report-code'] == 8: #delivery success in delivering to the SMSC
+            report_status_to_rapidpro('SENT', msg, app)
+        elif msg['dlr-report-code'] == 2: #delivery FAILURE in delivering to PHONE
+            report_status_to_rapidpro('FAILED', msg, app)
+        elif msg['dlr-report-code'] == 16: #delivery FAILURE in delivering to SMSC; most probably a rejection by SMSC
+            report_status_to_rapidpro('FAILED', msg, app)
+        elif msg['dlr-report-code'] == 4: #QUEUED on the bearerbox of Kannel for delivery in future
+            #TODO: Do something better than just ignoring this status!
+            pass;
+        elif msg['dlr-report-code'] == 32: #Intermediate notifications ??
+            #TODO: Find out what all possible dlr-report-values are sent at such time.
+            pass
+
+        return ('',200,[]) #return HTTP 200 without any text inside
+
+    except Exception as e:
+        #TODO Send an email report with all the request.args so on
+        app.logger.debug("Exception %s occurred", e)
+        raise e
+        abort(500)
 
 if __name__ == "__main__":
        app.run(debug = True, host = '0.0.0.0')

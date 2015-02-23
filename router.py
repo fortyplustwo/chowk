@@ -19,6 +19,7 @@ def compose_request_for_kannel(msg = {}, server = DEFAULT_KANNEL_SERVER):
         params['dlr-mask'] = 31 #31 means we get ALL Kind of delivery reports.
         params['dlr-url'] = ROOT_URL + "/deliveredsms/msgid=%s&dlr-report-code=%%d&dlr-report-value=%%A" % msg['id'] 
 
+
     url = "http://%s:%s/%s" % (server['host'],server['port'],server['path']);
     
     #return a prepared Request
