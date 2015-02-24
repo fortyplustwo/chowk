@@ -30,7 +30,7 @@ def sendsms():
         else:
             #report back to the RapidPro server about the success of delivery of this message
             app.logger.debug("Message %s succesfully forwarded to Kannel server", msg)
-            report_status_to_rapidpro(status = 'SENT', msg = msg, app = app)
+            report_status_to_rapidpro.delay(status = 'SENT', msg = msg, app = app)
             #we return in the format (response, status, headers) so that RapidPro knows that everything is HTTP 200 :)
             return ('',200,[])
     except KeyError as e:
@@ -64,7 +64,7 @@ def receivesms():
         if msg['host'] is False: #if we can't get the IP of the origin of request, just abort the whole process
             raise Exception("Cannot retrieve IP from the request to recognize the Kannel Server. Aborting processing!")
 
-        send_to_rapidpro(app = app, msg = msg)
+        send_to_rapidpro.delay(app = app, msg = msg)
         #we will NOT return any text because whatever is returned will be sent as SMS to the original sender by Kannel
         #we return in the format (response, status, headers) so that Kannel knows that everything is HTTP 200 :)
         return ('',200,[])
@@ -93,13 +93,13 @@ def deliveredsms():
         #2.http://kannel.org/download/1.4.4/userguide-1.4.4/userguide.html#AEN5058
 
         if msg['dlr-report-code'] == 1: #delivery success in delivering to PHONE
-            report_status_to_rapidpro('DELIVERED', msg, app)
+            report_status_to_rapidpro.delay('DELIVERED', msg, app)
         elif msg['dlr-report-code'] == 8: #delivery success in delivering to the SMSC
-            report_status_to_rapidpro('SENT', msg, app)
+            report_status_to_rapidpro.delay('SENT', msg, app)
         elif msg['dlr-report-code'] == 2: #delivery FAILURE in delivering to PHONE
-            report_status_to_rapidpro('FAILED', msg, app)
+            report_status_to_rapidpro.delay('FAILED', msg, app)
         elif msg['dlr-report-code'] == 16: #delivery FAILURE in delivering to SMSC; most probably a rejection by SMSC
-            report_status_to_rapidpro('FAILED', msg, app)
+            report_status_to_rapidpro.delay('FAILED', msg, app)
         elif msg['dlr-report-code'] == 4: #QUEUED on the bearerbox of Kannel for delivery in future
             #TODO: Do something better than just ignoring this status!
             pass;

@@ -1,5 +1,6 @@
 from requests import Request, Session, post
 from settings import KANNEL_SERVERS, DEFAULT_KANNEL_SERVER, RAPIDPRO_URLS, ROOT_URL
+from celery import celery
 
 def compose_request_for_kannel(msg = {}, server = DEFAULT_KANNEL_SERVER):
     '''composes a proper Request using the given msg and kannel server details'''
@@ -26,6 +27,7 @@ def compose_request_for_kannel(msg = {}, server = DEFAULT_KANNEL_SERVER):
     r = Request('GET', url, params = params)
     return r
 
+@celery.task
 def send_to_rapidpro(app, msg = {}):
     '''sends a given message to the RapidPro server'''
 
@@ -57,6 +59,7 @@ def send_to_rapidpro(app, msg = {}):
         app.logger.debug("Exception %s occurred", e)
         raise e
 
+@celery.task
 def send_to_kannel(app, msg = {}, preferred_kannel_server = None):
     '''sends a given messages to the _RIGHT_ kannel server'''
     server = None
@@ -100,6 +103,7 @@ def send_to_kannel(app, msg = {}, preferred_kannel_server = None):
     return (True, response.status_code, response.text)
     #call it.
 
+@celery.task
 def report_status_to_rapidpro(status, msg, app):
     '''Reports a specific delivery STATUS info about the msg to RapidPro
        This includes:
