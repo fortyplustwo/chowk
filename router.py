@@ -1,6 +1,6 @@
 from requests import Request, Session, post
 from settings import KANNEL_SERVERS, DEFAULT_KANNEL_SERVER, RAPIDPRO_URLS, ROOT_URL
-from celery import celery
+from celery_maker import celery
 
 def compose_request_for_kannel(msg = {}, server = DEFAULT_KANNEL_SERVER):
     '''composes a proper Request using the given msg and kannel server details'''
