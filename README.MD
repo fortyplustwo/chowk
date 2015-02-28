@@ -28,6 +28,7 @@ In future it will:
 * Have better error messsages and email based reporting and file based logging of exceptions, errors and warnings.
 * Support SSL in connections with RapidPro and Kannel.
 * Use Greenlet/eventlets to make things beter, faster and easier (??)
+* Authenticate requests from RapidPro and Kannel to ensure they are actually coming from where they say they are coming.
 
 What's in the name?
 --------------------
