@@ -44,8 +44,12 @@ def sendsms():
         msg['text'] = request.form['text']
         msg['id'] = request.form['id']
 
+        app.logger.debug("We got request form data in the body as", request.form)
+    
         #construct and send it forward
-        status, status_code, status_msg = send_to_kannel(msg = msg, app = app)
+        r = send_to_kannel.delay(msg = msg)
+        r.wait()
+        status, status_code, status_msg = r.result
 
         if status is False or status_code is not 200:
             return "Bad luck! Couldn't deliver your message. Try again later in 30 minutes."
