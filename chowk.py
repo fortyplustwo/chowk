@@ -1,7 +1,30 @@
 from flask import Flask, request, abort
-from router import send_to_kannel, report_status_to_rapidpro, send_to_rapidpro
+from tasks import send_to_kannel, report_status_to_rapidpro, send_to_rapidpro, testtask
 from utils import get_kannel_server
+import traceback
+import sys
+import logging
+
+#
 app = Flask(__name__)
+
+#define a file-based logger
+#TODO: Have a Email-based logger for ERROR and CRITICAL, while a RotatingFileLogger for WARNING and below
+from logging import DEBUG,ERROR
+rfh = logging.handlers.RotatingFileHandler('./chowk.log')
+rfh.setLevel(DEBUG)
+
+efh = logging.handlers.RotatingFileHandler('./error.log')
+efh.setLevel(ERROR)
+
+#Now, add handlers to all loggers
+loggers = [app.logger, logging.getLogger('tasks')]
+
+for l in loggers:
+    l.addHandler(rfh)
+    l.addHandler(efh)
+
+#Make this logger available to any functions outside this module
 
 @app.route("/")
 def index():
@@ -30,14 +53,25 @@ def sendsms():
         else:
             #report back to the RapidPro server about the success of delivery of this message
             app.logger.debug("Message %s succesfully forwarded to Kannel server", msg)
-            report_status_to_rapidpro.delay(status = 'SENT', msg = msg, app = app)
+            report_status_to_rapidpro.delay(status = 'SENT', msg = msg)
             #we return in the format (response, status, headers) so that RapidPro knows that everything is HTTP 200 :)
             return ('',200,[])
-    except KeyError as e:
-        print e
-        print e.msg
-        raise e
+    except KeyError as ke:
+        exc_info = sys.exc_info()
+        print "KeyError", ke
+        app.logger.exception(ke)
+        raise ke
         return "Wrong request data. Get off my server you idiot and RTFM!"
+    except Exception as e:
+        exc_info = sys.exc_info()
+        print "Exception ", e
+        app.logger.exception(e)
+        raise e
+        return "Error occured while trying to process your request"
+    finally:
+        traceback.print_exception(*exc_info)
+        del exc_info
+
 
 @app.route("/receivesms/", methods = ['GET'])
 def receivesms():
@@ -64,7 +98,7 @@ def receivesms():
         if msg['host'] is False: #if we can't get the IP of the origin of request, just abort the whole process
             raise Exception("Cannot retrieve IP from the request to recognize the Kannel Server. Aborting processing!")
 
-        send_to_rapidpro.delay(app = app, msg = msg)
+        send_to_rapidpro.delay(msg = msg)
         #we will NOT return any text because whatever is returned will be sent as SMS to the original sender by Kannel
         #we return in the format (response, status, headers) so that Kannel knows that everything is HTTP 200 :)
         return ('',200,[])
@@ -93,13 +127,13 @@ def deliveredsms():
         #2.http://kannel.org/download/1.4.4/userguide-1.4.4/userguide.html#AEN5058
 
         if msg['dlr-report-code'] == 1: #delivery success in delivering to PHONE
-            report_status_to_rapidpro.delay('DELIVERED', msg, app)
+            report_status_to_rapidpro.delay('DELIVERED', msg)
         elif msg['dlr-report-code'] == 8: #delivery success in delivering to the SMSC
-            report_status_to_rapidpro.delay('SENT', msg, app)
+            report_status_to_rapidpro.delay('SENT', msg)
         elif msg['dlr-report-code'] == 2: #delivery FAILURE in delivering to PHONE
-            report_status_to_rapidpro.delay('FAILED', msg, app)
+            report_status_to_rapidpro.delay('FAILED', msg)
         elif msg['dlr-report-code'] == 16: #delivery FAILURE in delivering to SMSC; most probably a rejection by SMSC
-            report_status_to_rapidpro.delay('FAILED', msg, app)
+            report_status_to_rapidpro.delay('FAILED', msg)
         elif msg['dlr-report-code'] == 4: #QUEUED on the bearerbox of Kannel for delivery in future
             #TODO: Do something better than just ignoring this status!
             pass;
@@ -111,13 +145,10 @@ def deliveredsms():
 
     except Exception as e:
         #TODO Send an email report with all the request.args so on
-        app.logger.debug("Exception %s occurred", e)
+        app.logger.exception(e)
         raise e
         abort(500)
 
 if __name__ == "__main__":
        app.run(debug = True, host = '0.0.0.0')
-       from logging import FileHandler,DEBUG
-       file_handler = FileHandler('./loggedfile.log')
-       file_handler.setLevel(DEBUG)
-       app.logger.addHandler(file_handler)
+       app.logger.debug("Starting debugging")
