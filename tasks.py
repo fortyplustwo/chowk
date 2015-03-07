@@ -3,6 +3,8 @@ from requests import Request, Session, post
 from settings import KANNEL_SERVERS, DEFAULT_KANNEL_SERVER, RAPIDPRO_URLS, ROOT_URL
 from utils import compose_request_for_kannel
 import logging
+import traceback
+import sys
 
 celery = Celery('chowk', broker = 'redis://localhost:6379/4')
 celery.conf.update(
@@ -83,16 +85,31 @@ def send_to_kannel( msg = {}, preferred_kannel_server = None):
         logger.error("Could not select any server for forwarding message! Check logs.")
         return False
 
-    #compose the complete Request with URL and data for sending sms
-    session = Session()
+    try:
+        #compose the complete Request with URL and data for sending sms
+        session = Session()
 
-    request = session.prepare_request(compose_request_for_kannel(msg, server))
-    logger.debug("Calling %s with data %s", request.url, request.body)
-    response = session.send(request)
+        request = session.prepare_request(compose_request_for_kannel(msg, server))
+        logger.debug("Calling %s with data %s", request.url, request.body)
+        response = session.send(request)
 
-    print response.status_code
-    print response.text
-    logger.debug("Received response code %s with text %s", response.status_code, response.text)
+        print response.status_code
+        print response.text
+        logger.debug("Received response code %s with text %s", response.status_code, response.text)
+        logger.debug("Result is %s %s ", response.status_code, response.text)
+
+        return (True, response.status_code, response.text)
+    except requests.ConnectionError as ce:
+        exc_info = sys.exc_info()
+        logger.critical("Problem while connecting to the server!")
+        logger.exception(ce)
+
+
+        return (False, response.status_code, response.text)
+    finally:
+
+        traceback.print_exception(*exc_info)
+        del exc_info
 
     return (True, response.status_code, response.text)
     #call it.
