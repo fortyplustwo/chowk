@@ -52,7 +52,14 @@ def sendsms():
         status, status_code, status_msg = r.result
         exc_info = sys.exc_info()
 
-        if status is False or status_code is not 200:
+        #We now try to find out the cause for failures, if any.
+        #TODO: Handle this using and raising exceptions in send_to_kannel instead of anything else.
+
+        if status_code == 403: #AuthenticationError with the Kannel
+            app.logger.critical("Internal authentication error when trying to send the message to %s! Check config!", msg['to'])
+            app.logger.critical("MSG Details are %s", msg)
+            abort(500)
+        elif status != False or status_code != 200:
             return "Bad luck! Couldn't deliver your message. Try again later in 30 minutes."
             abort(500)
         else:
