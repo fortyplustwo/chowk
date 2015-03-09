@@ -47,7 +47,7 @@ def sendsms():
         app.logger.debug("We got request form data in the body as", request.form)
     
         #construct and send it forward
-        r = send_to_kannel.delay(msg = msg)
+        r = send_to_kannel.apply_async(kwargs = {'msg': msg}, serializer = 'json')
         r.wait()
         status, status_code, status_msg = r.result
 
@@ -57,7 +57,7 @@ def sendsms():
         else:
             #report back to the RapidPro server about the success of delivery of this message
             app.logger.debug("Message %s succesfully forwarded to Kannel server", msg)
-            report_status_to_rapidpro.delay(status = 'SENT', msg = msg)
+            report_status_to_rapidpro.apply_async(kwargs = {'status': 'SENT', 'msg': msg}, serializer = 'json')
             #we return in the format (response, status, headers) so that RapidPro knows that everything is HTTP 200 :)
             return ('',200,[])
     except KeyError as ke:
@@ -73,6 +73,7 @@ def sendsms():
         raise e
         return "Error occured while trying to process your request"
     finally:
+        exc_info = sys.exc_info()
         traceback.print_exception(*exc_info)
         del exc_info
 
@@ -102,7 +103,7 @@ def receivesms():
         if msg['host'] is False: #if we can't get the IP of the origin of request, just abort the whole process
             raise Exception("Cannot retrieve IP from the request to recognize the Kannel Server. Aborting processing!")
 
-        send_to_rapidpro.delay(msg = msg)
+        send_to_rapidpro.apply_async(kwargs = {'msg': msg}, serializer = 'json')
         #we will NOT return any text because whatever is returned will be sent as SMS to the original sender by Kannel
         #we return in the format (response, status, headers) so that Kannel knows that everything is HTTP 200 :)
         return ('',200,[])
@@ -131,13 +132,13 @@ def deliveredsms():
         #2.http://kannel.org/download/1.4.4/userguide-1.4.4/userguide.html#AEN5058
 
         if msg['dlr-report-code'] == 1: #delivery success in delivering to PHONE
-            report_status_to_rapidpro.delay('DELIVERED', msg)
+            report_status_to_rapidpro.apply_async(kwargs = {'status': 'DELIVERED', 'msg': msg}, serializer = 'json')
         elif msg['dlr-report-code'] == 8: #delivery success in delivering to the SMSC
-            report_status_to_rapidpro.delay('SENT', msg)
+            report_status_to_rapidpro.apply_async(kwargs = {'status': 'SENT', 'msg': msg}, serializer = 'json')
         elif msg['dlr-report-code'] == 2: #delivery FAILURE in delivering to PHONE
-            report_status_to_rapidpro.delay('FAILED', msg)
+            report_status_to_rapidpro.apply_async(kwargs = {'status': 'FAILED', 'msg': msg}, serializer = 'json')
         elif msg['dlr-report-code'] == 16: #delivery FAILURE in delivering to SMSC; most probably a rejection by SMSC
-            report_status_to_rapidpro.delay('FAILED', msg)
+            report_status_to_rapidpro.apply_async(kwargs = {'status': 'FAILED', 'msg': msg}, serializer = 'json')
         elif msg['dlr-report-code'] == 4: #QUEUED on the bearerbox of Kannel for delivery in future
             #TODO: Do something better than just ignoring this status!
             pass;

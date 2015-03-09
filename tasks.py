@@ -7,6 +7,9 @@ import traceback
 import sys
 
 celery = Celery('chowk', broker = 'redis://localhost:6379/4')
+from kombu import serialization
+serialization.registry._decoders.pop("application/x-python-serialize")
+
 celery.conf.update(
         CELERY_TASK_SERIALIZER = 'json',
         CELERY_RESULT_BACKEND  = 'redis://localhost:6379/4',
@@ -80,10 +83,9 @@ def send_to_kannel( msg = {}, preferred_kannel_server = None):
             if server is not None: #we have found our server!
                 break;
 
-
     if server is None:
         logger.error("Could not select any server for forwarding message! Check logs.")
-        return False
+        return (False, 500, '')
 
     try:
         #compose the complete Request with URL and data for sending sms
@@ -104,15 +106,12 @@ def send_to_kannel( msg = {}, preferred_kannel_server = None):
         logger.critical("Problem while connecting to the server!")
         logger.exception(ce)
 
-
         return (False, response.status_code, response.text)
     finally:
-
+        exc_info = sys.exc_info()
         traceback.print_exception(*exc_info)
         del exc_info
 
-    return (True, response.status_code, response.text)
-    #call it.
 
 @celery.task
 def report_status_to_rapidpro(status, msg):
