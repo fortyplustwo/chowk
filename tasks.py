@@ -100,6 +100,7 @@ def send_to_kannel( msg = {}, preferred_kannel_server = None):
         print response.text
         logger.debug("Received response code %s with text %s", response.status_code, response.text)
         logger.debug("Result is %s %s ", response.status_code, response.text)
+        exc_info = sys.exc_info()
 
         return (True, response.status_code, response.text)
     except requests.ConnectionError as ce:

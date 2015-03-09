@@ -50,6 +50,7 @@ def sendsms():
         r = send_to_kannel.apply_async(kwargs = {'msg': msg}, serializer = 'json')
         r.wait()
         status, status_code, status_msg = r.result
+        exc_info = sys.exc_info()
 
         if status is False or status_code is not 200:
             return "Bad luck! Couldn't deliver your message. Try again later in 30 minutes."
@@ -73,7 +74,6 @@ def sendsms():
         raise e
         return "Error occured while trying to process your request"
     finally:
-        exc_info = sys.exc_info()
         traceback.print_exception(*exc_info)
         del exc_info
 
