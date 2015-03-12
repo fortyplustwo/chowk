@@ -1,43 +1,45 @@
+from celery import  Celery
 from requests import Request, Session, post
 from settings import KANNEL_SERVERS, DEFAULT_KANNEL_SERVER, RAPIDPRO_URLS, ROOT_URL
+from utils import compose_request_for_kannel
+import logging
+import traceback
+import sys
 
-def compose_request_for_kannel(msg = {}, server = DEFAULT_KANNEL_SERVER):
-    '''composes a proper Request using the given msg and kannel server details'''
+celery = Celery('chowk', broker = 'redis://localhost:6379/4')
+from kombu import serialization
+serialization.registry._decoders.pop("application/x-python-serialize")
 
-    params = {  #the data to be sent as query string with the URL
-            'username' : server['username'],
-            'password' : server['password'],
-            'from'     : msg['from'],
-            'to'       : msg['to'],
-            'text'     : msg['text'],
-            'smsc'     : server['smsc'],
-    }
+celery.conf.update(
+        CELERY_TASK_SERIALIZER = 'json',
+        CELERY_RESULT_BACKEND  = 'redis://localhost:6379/4',
+        CELERY_ACCEPT_CONTENT  = ['json'],
+        CELERY_RESULT_SERIALIZER = 'json',
+        )
 
-    #also ask for delivery reports
-    #ref: http://www.kannel.org/download/1.4.0/userguide-1.4.0/userguide.html#DELIVERY-REPORTS
-    if server['smsc'] is not None: #since SMSC IDs are *required* for getting delivery reports,
-        params['dlr-mask'] = 31 #31 means we get ALL Kind of delivery reports.
-        params['dlr-url'] = ROOT_URL + "/deliveredsms/?msgid=%s&dlr-report-code=%%d&dlr-report-value=%%A" % msg['id']
+#configure our logger
+logger = logging.getLogger(__name__) #thus, tasks.logger 
 
+@celery.task
+def testtask(a,b):
+    logger.debug("This is a debug msg")
+    logger.warning("This is a warning message")
+    logger.error("This is an error msg")
+    return "%s" % logger.name
 
-    url = "http://%s:%s/%s" % (server['host'],server['port'],server['path']);
-    
-    #return a prepared Request
-    r = Request('GET', url, params = params)
-    return r
-
-def send_to_rapidpro(app, msg = {}):
+@celery.task
+def send_to_rapidpro(msg = {}):
     '''sends a given message to the RapidPro server'''
 
     try:
         #if there is a keyword in the message, just remove it before forwarding to RapidPro
         keyword = KANNEL_SERVERS[msg['host']]['keyword']
-        app.logger.debug("The server %s use the keyword %s", msg['host'], keyword)
+        logger.debug("The server %s use the keyword %s", msg['host'], keyword)
 
         if keyword is not None:
             text = msg['text'].split()
             if text[0].upper() == keyword.upper(): #match using the same case
-                app.logger.debug("Removing keyword %s from the message %s", keyword, msg['text'])
+                logger.debug("Removing keyword %s from the message %s", keyword, msg['text'])
                 msg['text'] = " ".join(text[1:]) #remove the keyword from the message and reconstruct the SMS
 
         url = RAPIDPRO_URLS['RECEIVED']
@@ -47,17 +49,18 @@ def send_to_rapidpro(app, msg = {}):
                 'text'  : msg['text'],
         }
         r = post(url=url, data = data)
-        app.logger.debug("Sending request to RapidPro server at %s", r.url)
-        app.logger.debug("Data inside request to RapidPro server is %s", r.request.body)
-        app.logger.debug("The response we got from RapidPro is %s", r.text)
+        logger.debug("Sending request to RapidPro server at %s", r.url)
+        logger.debug("Data inside request to RapidPro server is %s", r.request.body)
+        logger.debug("The response we got from RapidPro is %s", r.text)
 
         r.raise_for_status() #Will raise an exception with the HTTP code ONLY IF the HTTP status was NOT 200
         return True
     except Exception as e:
-        app.logger.debug("Exception %s occurred", e)
+        logger.debug("Exception %s occurred", e)
         raise e
 
-def send_to_kannel(app, msg = {}, preferred_kannel_server = None):
+@celery.task
+def send_to_kannel( msg = {}, preferred_kannel_server = None):
     '''sends a given messages to the _RIGHT_ kannel server'''
     server = None
     if preferred_kannel_server is not None:
@@ -69,38 +72,51 @@ def send_to_kannel(app, msg = {}, preferred_kannel_server = None):
     
         for s,s_info in KANNEL_SERVERS.items():
             prefixes = s_info['series']
-            app.logger.debug("Server %s supports all numbers with the prefixes %s", s, prefixes)
+            logger.debug("Server %s supports all numbers with the prefixes %s", s, prefixes)
             for p in prefixes:
                 recipient = msg['to'].strip('+')
-                app.logger.debug("Trying to match %s with prefix %s ", recipient, p)
+                logger.debug("Trying to match %s with prefix %s ", recipient, p)
                 if recipient.startswith(p): #this is our number series
                     server = s_info 
-                    app.logger.debug("Selected server %s with prefix (%s) matching with recipient number %s", server, prefixes,recipient)
+                    logger.debug("Selected server %s with prefix (%s) matching with recipient number %s", server, prefixes,recipient)
                     break;
 
             if server is not None: #we have found our server!
                 break;
 
-
     if server is None:
-        app.logger.error("Could not select any server for forwarding message! Check logs.")
-        return False
+        logger.error("Could not select any server for forwarding message! Check logs.")
+        return (False, 500, '')
 
-    #compose the complete Request with URL and data for sending sms
-    session = Session()
+    try:
+        #compose the complete Request with URL and data for sending sms
+        session = Session()
 
-    request = session.prepare_request(compose_request_for_kannel(msg, server))
-    app.logger.debug("Calling %s with data %s", request.url, request.body)
-    response = session.send(request)
+        request = session.prepare_request(compose_request_for_kannel(msg, server))
+        logger.debug("Calling %s with data %s", request.url, request.body)
+        response = session.send(request)
 
-    print response.status_code
-    print response.text
-    app.logger.debug("Received response code %s with text %s", response.status_code, response.text)
+        print response.status_code
+        print response.text
+        logger.debug("Received response code %s with text %s", response.status_code, response.text)
+        logger.debug("Result is %s %s ", response.status_code, response.text)
+        exc_info = sys.exc_info()
 
-    return (True, response.status_code, response.text)
-    #call it.
+        return (True, response.status_code, response.text)
+    except requests.ConnectionError as ce:
+        exc_info = sys.exc_info()
+        logger.critical("Problem while connecting to the server!")
+        logger.exception(ce)
 
-def report_status_to_rapidpro(status, msg, app):
+        return (False, response.status_code, response.text)
+    finally:
+        exc_info = sys.exc_info()
+        traceback.print_exception(*exc_info)
+        del exc_info
+
+
+@celery.task
+def report_status_to_rapidpro(status, msg):
     '''Reports a specific delivery STATUS info about the msg to RapidPro
        This includes:
        1. SENT (A SMS has been given to the SMSC for delivering to the PHONE)
@@ -110,7 +126,8 @@ def report_status_to_rapidpro(status, msg, app):
        There is currently no clear distincition required by the RapidPro for the 3rd type of status
        and hence, we don't make it.
     '''
-    app.logger.debug("Status is %s", status)
+    logger.debug("Status is %s", status)
+    
     #TODO
     #FAILURE should be reported when 
     #1. When Kannel reports a deliver failure, by calling chowk's dlr-url route 
@@ -131,12 +148,14 @@ def report_status_to_rapidpro(status, msg, app):
 
         #Send a POST request to RapidPro server informing that the message has been queued successfull for sending at Kannel
         r = post(url = url, data = data)
-        app.logger.debug("Informed RapidPro at %s that delivery status of msgid %s at Kannel server is %s", r.url,r.request.body, status)
-        app.logger.debug("The RapidPro server replied %s", r.text)
+        logger.debug("Informed RapidPro at %s that delivery status of msgid %s at Kannel server is %s", r.url,r.request.body, status)
+        logger.debug("The RapidPro server replied %s", r.text)
         return True
     except Exception as e:
-        app.logger.debug("Exception %s occurred", e)
+        logger.debug("Exception %s occurred", e)
         raise e
         return False
 
-
+def test(a,b):
+    logger.debug('Debug msg from tasks.test')
+    return a + b
