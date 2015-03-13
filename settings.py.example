@@ -1,0 +1,87 @@
+
+'''
+1. All settings are mandatory!
+2. Rename this file as settings.py once you are done!
+'''
+
+#Put all your kannel servers in the nested structure below. 
+#The key for each configuration that you add will be the name that will be used for 
+#identifying that Kannel server internally. Don't worry about this unless you are 
+#specifying a kannel server for each message that you send (which isn't currently 
+#supported by chowk :-))
+
+KANNEL_SERVERS = { 
+      'vanemuine' : {
+                    #the ip address of the kannel server, NOT hostname
+                    'host'      : '127.0.0.1',
+                    
+                    #the port on which we should send any HTTP requests, 
+                    #usually the sendsms-port setting
+                    'port'      : '8881',                              
+                    
+                    #username for accessing the kannel server over HTTP, 
+                    #set None if no username                    
+                    #usually the username setting in sendsms-user group
+                    'username'  : 'sendsms',          
+                    
+                    #password for accessing the kannel server over HTTP, 
+                    #set None if no password
+                    #usually the password setting in sendsms-user group
+                    'password'  : 'sendsms',                             
+                    
+                    #the relative path on the server where we handover the msg to deliver, 
+                    #usually cgi-bin/sendsms
+                    'path'      : 'cgi-bin/sendsms',                              
+ 
+                    #list of phone number series for which this Kannel server 
+                    #must be used, when sending any OUTGOING message. Put numbers 
+                    #without any +  or leading 0s. They  may or may not include 
+                    #the country code depending on your kannel settings
+                    'series'    : ['9194222','9194231','919561'],
+
+                    #the SMSC ID to supply to Kannel server for indicating 
+                    #which SMSC to use. Set this to None if your smsc 
+                    #cofiguration doesn't have one. 
+                    #It is MANDATORY that your kannel configuration has 
+                    #a SMSC id if you want delivery reports! 
+                    #(ref: http://www.kannel.org/download/1.4.0/userguide-1.4.0/userguide.html#AEN1085)
+                    'smsc'      : 'vanemuine',
+
+                    #the keyword which is used by the kannel server to identify 
+                    #and filter messages for our rapidpro instance (via chowk) 
+                    #and will be present in the message received at chowk. 
+                    #If no specific keyword is used ie. you are using 
+                    #the 'default' as keyword in the smsc-service group, just put None here.
+                    'keyword' : None,
+                },
+        }
+
+
+#What server to use a fallback if no server is specified. 
+#This should be one of the keys that you specify in KANNEL_SERVERS
+DEFAULT_KANNEL_SERVER = 'vanemuine'
+
+#the URLs on which chowk should contact RapidPro
+#You can get this when you add chowk as an External API channel in RapidPro
+RAPIDPRO_URLS = {
+        #when a message is sent to Kannel for delivery
+        'SENT'      : 'http://rapidpro.example.net/api/v1/external/sent/a343485a-8e35-4d40-88ab-677bfe4d6ae6/',
+        #when a message is reported as delivered by Kannel
+        'DELIVERED' : 'http://rapidpro.example.net/api/v1/external/delivered/a343485a-8e35-4d40-88ab-677bfe4d6ae6/',
+        #when a message is reported as failed by Kannel
+        'FAILED'    : 'http://rapidpro.example.net/api/v1/external/failed/a343485a-8e35-4d40-88ab-677bfe4d6ae6/',
+        #when a message is sent by Kannel for RapidPro server 
+        'RECEIVED'  : 'http://rapidpro.example.net/api/v1/external/received/a343485a-8e35-4d40-88ab-677bfe4d6ae6/',
+        }
+
+
+#the URL at which this instance of chowk will be available WITHOUT any 
+#trailing slash. This is used to inform Kannel servers at which URL should
+#they send the delivery report
+ROOT_URL = "http://chowk.example.net" 
+
+#The redis settings for using Celery. 
+#Both BROKER and RESULT can be in the same database. 
+#You can specify the password here if needed.
+CELERY_BROKER_URL = 'redis://localhost:6379/2'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/3'

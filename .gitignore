@@ -1,2 +1,3 @@
 *.pyc
 chowk_env/*
+settings.py
