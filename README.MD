@@ -1,10 +1,10 @@
 chowk
 =====
 
-chowk acts as a interface between RapidPro and any number of Kannel servers that you have by
-passing messages to and fro in a format that both will understand.
+chowk acts as a interface between [RapidPro](http://rapidpro.io) and any number of [Kannel](http://kannel.org) servers that you have,
+by passing messages to and fro in a format that both will understand.
 
-Who and how does chowk help ?
+Whom and how does chowk help ?
 ----------------
 If you have multiple Kannel servers and need to pass on each message originating from RapidPro
 to the "right" kannel server based on the number series of the recipient (ie. the network operator),
