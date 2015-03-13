@@ -152,6 +152,10 @@ def deliveredsms():
         elif msg['dlr-report-code'] == 32: #Intermediate notifications ??
             #TODO: Find out what all possible dlr-report-values are sent at such time.
             pass
+        else: #we don't recognize the delivery report code!
+            app.logger.debug("We don't recognize this delivery report code %s Hence not passing it ahead to RapidPro since we can't figure out the URL", msg['dlr-report-code'])
+
+
 
         return ('',200,[]) #return HTTP 200 without any text inside
 
